@@ -1,6 +1,6 @@
 #include <fstream>
 #include <iostream>
-/* test2.c */
+
 struct page
 {
     int start;
