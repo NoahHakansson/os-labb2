@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <time.h> /* time */
+#include <unistd.h>
 /* test2.c */
 
 #define SIZE (16*1024)
