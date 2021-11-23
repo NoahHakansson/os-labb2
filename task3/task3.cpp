@@ -22,12 +22,13 @@ struct page
 
 struct pageFrames
 {
-    page *start;
+    page *frames;
     int size;
+    int MAXIMUM_SIZE;
     pageFrames()
     {
         size = 0;
-        start = nullptr;
+        MAXIMUM_SIZE = 0;
     }
 };
 
@@ -49,16 +50,35 @@ void getInterval(int address, int const interval, int *values)
 
 bool isInPagesFrames(pageFrames pageframes, int address)
 {
-    page *walker = pageframes.start;
-    while (walker != nullptr)
+
+    for (int i = 0;i < pageframes.MAXIMUM_SIZE;i++)
     {
-        if (walker->start <= address && walker->end >= address)
+        if (pageframes.frames[i].start <= address && address <= pageframes.frames[i].end)
         {
             return true;
         }
-        walker = walker->next;
     }
     return false;
+}
+
+void FIFO(pageFrames &pageframes, int start, int end)
+{
+    for (int i = 0;i < pageframes.MAXIMUM_SIZE - 1;i++)
+    {
+        pageframes.frames[i].start = pageframes.frames[i + 1].start;
+        pageframes.frames[i].end = pageframes.frames[i + 1].end;
+    }
+    pageframes.frames[pageframes.MAXIMUM_SIZE - 1].start = start;
+    pageframes.frames[pageframes.MAXIMUM_SIZE - 1].end = end;
+}
+
+void writePageFrames(pageFrames pageframes)
+{
+    for (int i = 0;i < pageframes.MAXIMUM_SIZE;i++)
+    {
+        std::cout << "{" << pageframes.frames[i].start << ", " << pageframes.frames[i].end << "} ";
+    }
+    std::cout << std::endl;
 }
 
 int main(int argc, char **argv)
@@ -68,50 +88,54 @@ int main(int argc, char **argv)
         int const MAXIMUM_PAGES = std::stoi(argv[1]);
         int pagesFaults = 0;
         int linesRead = 0;
-        pageFrames pageframes;
         std::string fileName = argv[3];
         int const pageSize = std::stoi(argv[2]);
-        int const interval = ((pageSize * 8)) / 32;
+        int const interval = ((pageSize)) / sizeof(pageSize);
+
+        pageFrames pageframes;
+        pageframes.MAXIMUM_SIZE = MAXIMUM_PAGES;
+        page frames[MAXIMUM_PAGES];
+        pageframes.frames = frames;
 
         std::ifstream memFile(fileName);
         std::string line;
         int results[2] = {0, 0};
         while (std::getline(memFile, line))
         {
-            if (!isInPagesFrames(pageframes, std::stoi(line)))
+            if (pageframes.size < MAXIMUM_PAGES && !isInPagesFrames(pageframes, std::stoi(line)))
             {
                 getInterval(std::stoi(line), interval, results);
-                if (pageframes.size < MAXIMUM_PAGES)
+                if (pageframes.size == 0)
                 {
-                    if (pageframes.size == 0)
-                    {
-                        pageframes.start = new page(results[0], results[1]);
-                    }
-                    else
-                    {
-                        page *walker = pageframes.start;
-                        while (walker != nullptr && pageframes.size != 0)
-                        {
-                            walker = walker->next;
-                        }
-                        walker = new page(results[0], results[1]);
-                    }
-                    pageframes.size++;
+                    pageframes.frames[0].start = results[0];
+                    pageframes.frames[0].end = results[1];
                 }
                 else
                 {
-                    pageframes.start->start = results[0];
-                    pageframes.start->end = results[1];
+                    pageframes.frames[pageframes.size].start = results[0];
+                    pageframes.frames[pageframes.size].end = results[1];
                 }
                 pagesFaults++;
+                pageframes.size++;
+                std::cout << "Pagefault!\n";
             }
+            else if (!isInPagesFrames(pageframes, std::stoi(line)))
+            {
+                getInterval(std::stoi(line), interval, results);
+
+                FIFO(pageframes, results[0], results[1]);
+
+                pagesFaults++;
+                std::cout << "Pagefault!\n";
+            }
+            writePageFrames(pageframes);
             linesRead++;
         }
         memFile.close();
         std::cout << "No physical pages = " << MAXIMUM_PAGES << ", page size = " << pageSize << std::endl;
         std::cout << "Reading memory trace from " << fileName << std::endl;
         std::cout << "Read " << linesRead << " memory references => " << pagesFaults << " pagefaults" << std::endl;
-        std::cout << "Page frames: " << pageframes.size << std::endl;
+        std::cout << "Interval: " << interval << std::endl;
     }
     else
     {
