@@ -1,7 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <time.h> /* time */
 #include <fstream>
 #include <iostream>
 /* test2.c */
@@ -35,7 +31,7 @@ struct pageFrames
     }
 };
 
-void getInterval(int address, int const interval, int* values)
+void getInterval(int address, int const interval, int *values)
 {
     int start;
     int end;
@@ -49,12 +45,11 @@ void getInterval(int address, int const interval, int* values)
     int returnValues[2];
     values[0] = start;
     values[1] = end;
-
 }
 
 bool isInPagesFrames(pageFrames pageframes, int address)
 {
-    page* walker = pageframes.start;
+    page *walker = pageframes.start;
     while (walker != nullptr)
     {
         if (walker->start <= address && walker->end >= address)
@@ -68,31 +63,39 @@ bool isInPagesFrames(pageFrames pageframes, int address)
 
 int main(int argc, char **argv)
 {
-    if (argc == 4) {
+    if (argc == 4)
+    {
         int const MAXIMUM_PAGES = std::stoi(argv[1]);
         int pagesFaults = 0;
         int linesRead = 0;
         pageFrames pageframes;
         std::string fileName = argv[3];
         int const pageSize = std::stoi(argv[2]);
-        int const interval = ((pageSize * 8))/32;
+        int const interval = ((pageSize * 8)) / 32;
 
         std::ifstream memFile(fileName);
         std::string line;
         int results[2] = {0, 0};
         while (std::getline(memFile, line))
-        {   
+        {
             if (!isInPagesFrames(pageframes, std::stoi(line)))
             {
                 getInterval(std::stoi(line), interval, results);
                 if (pageframes.size < MAXIMUM_PAGES)
                 {
-                    page *walker = pageframes.start;
-                    while (walker != nullptr)
+                    if (pageframes.size == 0)
                     {
-                        walker = walker->next;
+                        pageframes.start = new page(results[0], results[1]);
                     }
-                    walker->next = new page(results[0], results[1]);
+                    else
+                    {
+                        page *walker = pageframes.start;
+                        while (walker != nullptr && pageframes.size != 0)
+                        {
+                            walker = walker->next;
+                        }
+                        walker = new page(results[0], results[1]);
+                    }
                     pageframes.size++;
                 }
                 else
@@ -108,11 +111,11 @@ int main(int argc, char **argv)
         std::cout << "No physical pages = " << MAXIMUM_PAGES << ", page size = " << pageSize << std::endl;
         std::cout << "Reading memory trace from " << fileName << std::endl;
         std::cout << "Read " << linesRead << " memory references => " << pagesFaults << " pagefaults" << std::endl;
+        std::cout << "Page frames: " << pageframes.size << std::endl;
     }
     else
     {
         std::cout << "Wrong amount of arguments!\nArguments written: " << argc << std::endl;
         return 0;
     }
-
 }
