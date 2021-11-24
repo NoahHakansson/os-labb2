@@ -1,6 +1,6 @@
 #include <fstream>
 #include <iostream>
-
+/* test2.c */
 struct page
 {
     int start;
@@ -51,7 +51,7 @@ void getInterval(int address, int const interval, int *values)
 bool isInPagesFrames(pageFrames pageframes, int address)
 {
 
-    for (int i = 0;i < pageframes.MAXIMUM_SIZE;i++)
+    for (int i = 0; i < pageframes.MAXIMUM_SIZE; i++)
     {
         if (pageframes.frames[i].start <= address && address <= pageframes.frames[i].end)
         {
@@ -61,20 +61,41 @@ bool isInPagesFrames(pageFrames pageframes, int address)
     return false;
 }
 
-void FIFO(pageFrames &pageframes, int start, int end)
+void LRU(pageFrames &pageframes, int start, int end)
 {
-    for (int i = 0;i < pageframes.MAXIMUM_SIZE - 1;i++)
+    for (int i = 0; i < pageframes.MAXIMUM_SIZE - 1; i++)
     {
-        pageframes.frames[i].start = pageframes.frames[i + 1].start;
-        pageframes.frames[i].end = pageframes.frames[i + 1].end;
+        pageframes.frames[i + 1].start = pageframes.frames[i].start;
+        pageframes.frames[i + 1].end = pageframes.frames[i].end;
     }
-    pageframes.frames[pageframes.MAXIMUM_SIZE - 1].start = start;
-    pageframes.frames[pageframes.MAXIMUM_SIZE - 1].end = end;
+    pageframes.frames[0].start = start;
+    pageframes.frames[0].end = end;
+}
+
+void shiftMostRecentlyUsed(pageFrames &pageframes, int start, int end)
+{
+    int pageIndex;
+    for (int i = 0; i < pageframes.MAXIMUM_SIZE; i++)
+    {
+        if (pageframes.frames[i].start == start && end == pageframes.frames[i].end)
+        {
+            pageIndex = i;
+            break;
+        }
+    }
+    for (int i = 0; i < pageIndex - 1; i++)
+    {
+        pageframes.frames[i + 1].start = pageframes.frames[i].start;
+        pageframes.frames[i + 1].end = pageframes.frames[i].end;
+    }
+    pageframes.frames[0].start = start;
+    pageframes.frames[0].end = end;
+    
 }
 
 void writePageFrames(pageFrames pageframes)
 {
-    for (int i = 0;i < pageframes.MAXIMUM_SIZE;i++)
+    for (int i = 0; i < pageframes.MAXIMUM_SIZE; i++)
     {
         std::cout << "{" << pageframes.frames[i].start << ", " << pageframes.frames[i].end << "} ";
     }
@@ -101,9 +122,9 @@ int main(int argc, char **argv)
         int results[2] = {0, 0};
         while (std::getline(memFile, line))
         {
+            getInterval(std::stoi(line), pageSize, results);
             if (pageframes.size < MAXIMUM_PAGES && !isInPagesFrames(pageframes, std::stoi(line)))
             {
-                getInterval(std::stoi(line), pageSize, results);
                 if (pageframes.size == 0)
                 {
                     pageframes.frames[0].start = results[0];
@@ -111,27 +132,35 @@ int main(int argc, char **argv)
                 }
                 else
                 {
-                    pageframes.frames[pageframes.size].start = results[0];
-                    pageframes.frames[pageframes.size].end = results[1];
+                    for (int i = pageframes.size - 1; i > 0; i--)
+                    {
+                        pageframes.frames[i].start = pageframes.frames[i - 1].start;
+                        pageframes.frames[i].end = pageframes.frames[i - 1].end;
+                    }
+                    pageframes.frames[0].start = results[0];
+                    pageframes.frames[0].end = results[1];
                 }
                 pagesFaults++;
+                std::cout << "Pagefault!\n";
                 pageframes.size++;
             }
             else if (!isInPagesFrames(pageframes, std::stoi(line)))
             {
-                getInterval(std::stoi(line), pageSize, results);
-
-                FIFO(pageframes, results[0], results[1]);
-
+                LRU(pageframes, results[0], results[1]);
+                std::cout << "Pagefault!\n";
                 pagesFaults++;
             }
+            else
+            {
+                shiftMostRecentlyUsed(pageframes, results[0], results[1]);
+            }
             linesRead++;
+            writePageFrames(pageframes);
         }
         memFile.close();
         std::cout << "No physical pages = " << MAXIMUM_PAGES << ", page size = " << pageSize << std::endl;
         std::cout << "Reading memory trace from " << fileName << std::endl;
         std::cout << "Read " << linesRead << " memory references => " << pagesFaults << " pagefaults" << std::endl;
-        std::cout << "array size: " << pageframes.size << std::endl;
     }
     else
     {
