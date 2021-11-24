@@ -63,19 +63,8 @@ bool isInPagesFrames(pageFrames pageframes, int address)
 
 void LRU(pageFrames &pageframes, int start, int end)
 {
-    // Shift everything left one step
-    for (int i = 0; i < pageframes.size - 1; i++)
-    {
-        pageframes.frames[i].start = pageframes.frames[i + 1].start;
-        pageframes.frames[i].end = pageframes.frames[i + 1].end;
-    }
-    if (pageframes.size == pageframes.MAXIMUM_SIZE) {
-        pageframes.frames[pageframes.MAXIMUM_SIZE - 1].start = start;
-        pageframes.frames[pageframes.MAXIMUM_SIZE - 1].end = end;
-    }else{
-        pageframes.frames[pageframes.size].start = start;
-        pageframes.frames[pageframes.size].end = end;
-    }
+    pageframes.frames[0].start = start;
+    pageframes.frames[0].end = end;
 }
 
 void shiftMostRecentlyUsed(pageFrames &pageframes, int start, int end)
@@ -156,8 +145,13 @@ int main(int argc, char **argv)
                 }
                 else
                 {
-                    pageframes.frames[pageframes.size].start = results[0];
-                    pageframes.frames[pageframes.size].end = results[1];
+                    for (int i = 0;i < pageframes.size - 1;i++)
+                    {
+                        pageframes.frames[i].start = pageframes.frames[i + 1].start;
+                        pageframes.frames[i].end = pageframes.frames[i + 1].end;
+                    }
+                        pageframes.frames[0].start = results[0];
+                        pageframes.frames[0].end = results[1];
                 }
                 pagesFaults++;
                 std::cout << "Pagefault!\n";
