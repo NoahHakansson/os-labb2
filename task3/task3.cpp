@@ -136,6 +136,7 @@ int main(int argc, char **argv)
         std::cout << "Reading memory trace from " << fileName << std::endl;
         std::cout << "Read " << linesRead << " memory references => " << pagesFaults << " pagefaults" << std::endl;
         std::cout << "Interval: " << interval << std::endl;
+        std::cout << "array size: " << pageframes.size << std::endl;
     }
     else
     {
