@@ -90,7 +90,7 @@ int main(int argc, char **argv)
         int linesRead = 0;
         std::string fileName = argv[3];
         int const pageSize = std::stoi(argv[2]);
-        int const interval = ((pageSize)) / sizeof(pageSize);
+        int const interval = pageSize / 1;
 
         pageFrames pageframes;
         pageframes.MAXIMUM_SIZE = MAXIMUM_PAGES;
