@@ -101,9 +101,9 @@ int main(int argc, char **argv)
         int results[2] = {0, 0};
         while (std::getline(memFile, line))
         {
+            getInterval(std::stoi(line), pageSize, results);
             if (pageframes.size < MAXIMUM_PAGES && !isInPagesFrames(pageframes, std::stoi(line)))
             {
-                getInterval(std::stoi(line), pageSize, results);
                 if (pageframes.size == 0)
                 {
                     pageframes.frames[0].start = results[0];
@@ -115,17 +115,17 @@ int main(int argc, char **argv)
                     pageframes.frames[pageframes.size].end = results[1];
                 }
                 pagesFaults++;
+                std::cout << "Pagefault!\n";
                 pageframes.size++;
             }
             else if (!isInPagesFrames(pageframes, std::stoi(line)))
             {
-                getInterval(std::stoi(line), pageSize, results);
-
                 FIFO(pageframes, results[0], results[1]);
-
                 pagesFaults++;
+                std::cout << "Pagefault!\n";
             }
             linesRead++;
+            writePageFrames(pageframes);
         }
         memFile.close();
         std::cout << "No physical pages = " << MAXIMUM_PAGES << ", page size = " << pageSize << std::endl;
