@@ -7,20 +7,20 @@ struct page
     int start;
     int end;
     page *next;
-    int index;
+    bool found;
     page()
     {
         start = 0;
         end = 0;
         next = nullptr;
-        index = 0;
+        found = false;
     }
     page(int start, int end)
     {
         this->start = start;
         this->end = end;
         next = nullptr;
-        index = 0;
+        found = false;
     }
 };
 
@@ -65,23 +65,58 @@ bool isInPagesFrames(pageFrames pageframes, int address)
     return false;
 }
 
-void LRU(pageFrames &pageframes, int start, int end)
+int getIndex(pageFrames pageframes, int address)
 {
-    // Shift everything left one step
-    for (int i = 0; i < pageframes.size - 1; i++)
+    for (int i = 0; i < pageframes.MAXIMUM_SIZE; i++)
     {
-        pageframes.frames[i].start = pageframes.frames[i + 1].start;
-        pageframes.frames[i].end = pageframes.frames[i + 1].end;
+        if (pageframes.frames[i].start <= address && address <= pageframes.frames[i].end)
+        {
+            return i;
+        }
     }
-    if (pageframes.size == pageframes.MAXIMUM_SIZE)
+    return -1;
+}
+
+bool isInPagesFrames(pageFrames pageframes, int start, int end)
+{
+
+    for (int i = 0; i < pageframes.MAXIMUM_SIZE; i++)
     {
-        pageframes.frames[pageframes.MAXIMUM_SIZE - 1].start = start;
-        pageframes.frames[pageframes.MAXIMUM_SIZE - 1].end = end;
+        if (pageframes.frames[i].start == start && end == pageframes.frames[i].end)
+        {
+            return true;
+        }
     }
-    else
+    return false;
+}
+
+void optimal(pageFrames &pageframes, int start, int end, int index, std::vector<int> addresses)
+{
+    int count = 0;
+    int pageIndex = 0;
+    for (int i = index + 1;i < addresses.size() && count < pageframes.MAXIMUM_SIZE - 1;i++)
     {
-        pageframes.frames[pageframes.size].start = start;
-        pageframes.frames[pageframes.size].end = end;
+        if (isInPagesFrames(pageframes, addresses[i]))
+        {
+            pageIndex = getIndex(pageframes, addresses[i]);
+            if (pageframes.frames[pageIndex].found == false)
+            {
+                pageframes.frames[pageIndex].found = true;
+                count++;
+            }
+        }
+    }
+    for (int i = 0;i < pageframes.MAXIMUM_SIZE;i++)
+    {
+        if (pageframes.frames[i].found == false) 
+        {
+            pageframes.frames[i].start = start;
+            pageframes.frames[i].end = end;
+        }
+    }
+    for (int i = 0;i < pageframes.MAXIMUM_SIZE;i++)
+    {
+        pageframes.frames[i].found = false;
     }
 }
 
@@ -156,13 +191,15 @@ int main(int argc, char **argv)
         std::ifstream memFile(fileName);
         std::string line;
         int results[3] = {0, 0, 0};
-        std::vector<std::string> addresses;
+        std::vector<int> addresses;
+        int value;
         while (std::getline(memFile, line))
         {
+            addresses.push_back(std::stoi(line));
         }
         for (int i = 0; i < addresses.size(); i++)
         {
-            getInterval(std::stoi(addresses[i]), pageSize, results);
+            getInterval(addresses[i], pageSize, results);
             //std::cout << "Interval: [" << results[0] <<" " << results[1] << "]" << std::endl;
             if (pageframes.size < MAXIMUM_PAGES && !isInPagesFrames(pageframes, std::stoi(line)))
             {
@@ -182,13 +219,9 @@ int main(int argc, char **argv)
             }
             else if (!isInPagesFrames(pageframes, std::stoi(line)))
             {
-                LRU(pageframes, results[0], results[1]);
+                optimal(pageframes, results[0], results[1], i, addresses);
                 //std::cout << "Pagefault!\n";
                 pagesFaults++;
-            }
-            else if (pageframes.size >= MAXIMUM_PAGES)
-            {
-                shiftMostRecentlyUsed(pageframes, results[0], results[1]);
             }
             linesRead++;
             writePageFrames(pageframes);
