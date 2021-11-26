@@ -94,6 +94,7 @@ void optimal(pageFrames &pageframes, int start, int end, int index, std::vector<
 {
     int count = 0;
     int pageIndex = 0;
+    //Loops through future address calls and sets found to the addresses already existing in page frames, stopping right before the last page frame is found
     for (int i = index + 1;i < addresses.size() && count < pageframes.MAXIMUM_SIZE - 1;i++)
     {
         if (isInPagesFrames(pageframes, addresses[i]))
@@ -106,6 +107,8 @@ void optimal(pageFrames &pageframes, int start, int end, int index, std::vector<
             }
         }
     }
+    //Finds the page frame in the array which is last in the future calls
+    //Inserts the new page at the given position
     for (int i = 0;i < pageframes.MAXIMUM_SIZE;i++)
     {
         if (pageframes.frames[i].found == false) 
@@ -114,53 +117,10 @@ void optimal(pageFrames &pageframes, int start, int end, int index, std::vector<
             pageframes.frames[i].end = end;
         }
     }
+    //Resets all pages for next time optimal() is called
     for (int i = 0;i < pageframes.MAXIMUM_SIZE;i++)
     {
         pageframes.frames[i].found = false;
-    }
-}
-
-void shiftMostRecentlyUsed(pageFrames &pageframes, int start, int end)
-{
-    int tempStart = 0;
-    int tempEnd = 0;
-    int pageIndex = 0;
-    //std::cout << "Started shifting function..." << std::endl;
-    // find most recently used page index
-    for (int i = 0; i < pageframes.size; i++)
-    {
-        if (pageframes.frames[i].start == start && pageframes.frames[i].end == end)
-        {
-            pageIndex = i;
-            //std::cout << "found index: " << pageIndex << std::endl;
-            break;
-        }
-    }
-    // if page is already the most recently used, do nothing and return.
-    if (pageIndex == pageframes.size - 1)
-    {
-        //std::cout << "Returning early..." << std::endl;
-        return;
-    }
-    // If not most recently used,
-    // shift everything to the right of pageIndex left one step.
-    //std::cout << "Started shifting loop..." << std::endl;
-    for (int i = pageIndex; i < pageframes.size - 1; i++)
-    {
-        //std::cout << "Shifting..." << std::endl;
-        pageframes.frames[i].start = pageframes.frames[i + 1].start;
-        pageframes.frames[i].end = pageframes.frames[i + 1].end;
-    }
-    // insert last used page in last position.
-    if (pageframes.size == pageframes.MAXIMUM_SIZE)
-    {
-        pageframes.frames[pageframes.MAXIMUM_SIZE - 1].start = start;
-        pageframes.frames[pageframes.MAXIMUM_SIZE - 1].end = end;
-    }
-    else
-    {
-        pageframes.frames[pageframes.size].start = start;
-        pageframes.frames[pageframes.size].end = end;
     }
 }
 
