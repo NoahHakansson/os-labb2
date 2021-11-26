@@ -196,13 +196,13 @@ int main(int argc, char **argv)
         while (std::getline(memFile, line))
         {
             value = std::stoi(line);
-	    addresses.push_back(value);
+	        addresses.push_back(value);
         }
         for (int i = 0; i < addresses.size(); i++)
         {
             getInterval(addresses[i], pageSize, results);
             //std::cout << "Interval: [" << results[0] <<" " << results[1] << "]" << std::endl;
-            if (pageframes.size < MAXIMUM_PAGES && !isInPagesFrames(pageframes, std::stoi(line)))
+            if (pageframes.size < MAXIMUM_PAGES && !isInPagesFrames(pageframes, addresses[i]))
             {
                 if (pageframes.size == 0)
                 {
@@ -218,7 +218,7 @@ int main(int argc, char **argv)
                 //std::cout << "Pagefault!\n";
                 pageframes.size++;
             }
-            else if (!isInPagesFrames(pageframes, std::stoi(line)))
+            else if (!isInPagesFrames(pageframes, addresses[i]))
             {
                 optimal(pageframes, results[0], results[1], i, addresses);
                 //std::cout << "Pagefault!\n";
