@@ -195,7 +195,8 @@ int main(int argc, char **argv)
         int value;
         while (std::getline(memFile, line))
         {
-            addresses.push_back(std::stoi(line));
+            value = std::stoi(line);
+	    addresses.push_back(value);
         }
         for (int i = 0; i < addresses.size(); i++)
         {
