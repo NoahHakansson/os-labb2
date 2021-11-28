@@ -94,7 +94,8 @@ void optimal(pageFrames &pageframes, int start, int end, int index, std::vector<
 {
     int count = 0;
     int pageIndex = 0;
-    //Loops through future address calls and sets found to the addresses already existing in page frames, stopping right before the last page frame is found
+    //Loops through future address calls and sets found to the addresses already existing in page frames,
+    //stopping right before the last page frame is found
     for (int i = index + 1;i < addresses.size() && count < pageframes.MAXIMUM_SIZE - 1;i++)
     {
         if (isInPagesFrames(pageframes, addresses[i]))
@@ -111,7 +112,7 @@ void optimal(pageFrames &pageframes, int start, int end, int index, std::vector<
     //Inserts the new page at the given position
     for (int i = 0;i < pageframes.MAXIMUM_SIZE;i++)
     {
-        if (pageframes.frames[i].found == false) 
+        if (pageframes.frames[i].found == false)
         {
             pageframes.frames[i].start = start;
             pageframes.frames[i].end = end;
@@ -158,6 +159,7 @@ int main(int argc, char **argv)
             value = std::stoi(line);
 	        addresses.push_back(value);
         }
+        memFile.close();
         for (int i = 0; i < addresses.size(); i++)
         {
             getInterval(addresses[i], pageSize, results);
@@ -187,7 +189,6 @@ int main(int argc, char **argv)
             linesRead++;
             writePageFrames(pageframes);
         }
-        memFile.close();
         std::cout << "No physical pages = " << MAXIMUM_PAGES << ", page size = " << pageSize << std::endl;
         std::cout << "Reading memory trace from " << fileName << std::endl;
         std::cout << "Read " << linesRead << " memory references => " << pagesFaults << " pagefaults" << std::endl;
