@@ -1,22 +1,26 @@
 #include <fstream>
 #include <iostream>
+#include <vector>
 /* test2.c */
 struct page
 {
     int start;
     int end;
     page *next;
+    bool found;
     page()
     {
         start = 0;
         end = 0;
         next = nullptr;
+        found = false;
     }
     page(int start, int end)
     {
         this->start = start;
         this->end = end;
         next = nullptr;
+        found = false;
     }
 };
 
@@ -61,58 +65,63 @@ bool isInPagesFrames(pageFrames pageframes, int address)
     return false;
 }
 
-void LRU(pageFrames &pageframes, int start, int end)
+int getIndex(pageFrames pageframes, int address)
 {
-    // Shift everything left one step
-    for (int i = 0; i < pageframes.size - 1; i++)
+    for (int i = 0; i < pageframes.MAXIMUM_SIZE; i++)
     {
-        pageframes.frames[i].start = pageframes.frames[i + 1].start;
-        pageframes.frames[i].end = pageframes.frames[i + 1].end;
-    }
-    if (pageframes.size == pageframes.MAXIMUM_SIZE) {
-        pageframes.frames[pageframes.MAXIMUM_SIZE - 1].start = start;
-        pageframes.frames[pageframes.MAXIMUM_SIZE - 1].end = end;
-    }else{
-        pageframes.frames[pageframes.size].start = start;
-        pageframes.frames[pageframes.size].end = end;
-    }
-}
-
-void shiftMostRecentlyUsed(pageFrames &pageframes, int start, int end)
-{
-    int tempStart = 0;
-    int tempEnd = 0;
-    int pageIndex = 0;
-    //std::cout << "Started shifting function..." << std::endl;
-    // find most recently used page index
-    for (int i = 0; i < pageframes.size; i++) {
-        if (pageframes.frames[i].start == start && pageframes.frames[i].end == end) {
-            pageIndex = i;
-            //std::cout << "found index: " << pageIndex << std::endl;
-            break;
+        if (pageframes.frames[i].start <= address && address <= pageframes.frames[i].end)
+        {
+            return i;
         }
     }
-    // if page is already the most recently used, do nothing and return.
-    if(pageIndex == pageframes.size - 1){
-        //std::cout << "Returning early..." << std::endl;
-        return;
-    }
-    // If not most recently used,
-    // shift everything to the right of pageIndex left one step.
-    //std::cout << "Started shifting loop..." << std::endl;
-    for (int i = pageIndex; i < pageframes.size - 1; i++)
+    return -1;
+}
+
+bool isInPagesFrames(pageFrames pageframes, int start, int end)
+{
+
+    for (int i = 0; i < pageframes.MAXIMUM_SIZE; i++)
     {
-    //std::cout << "Shifting..." << std::endl;
-        pageframes.frames[i].start = pageframes.frames[i + 1].start;
-        pageframes.frames[i].end = pageframes.frames[i + 1].end;
+        if (pageframes.frames[i].start == start && end == pageframes.frames[i].end)
+        {
+            return true;
+        }
     }
-    // insert last used page in last position.
-    if (pageframes.size == pageframes.MAXIMUM_SIZE) {
-        pageframes.frames[pageframes.MAXIMUM_SIZE - 1].start = start;
-        pageframes.frames[pageframes.MAXIMUM_SIZE - 1].end = end;
-    }else{
-        pageframes.frames[pageframes.size].start = start;
-        pageframes.frames[pageframes.size].end = end;
+    return false;
+}
+
+void LRU(pageFrames &pageframes, int start, int end, int index, std::vector<int> addresses)
+{
+    int count = 0;
+    int pageIndex = 0;
+    //Loops through earlier address calls and sets found to the addresses already existing in page frames,
+    //stopping right before the last page frame is found
+    for (int i = index - 1;i > 0 && count < pageframes.MAXIMUM_SIZE - 1;i--)
+    {
+        if (isInPagesFrames(pageframes, addresses[i]))
+        {
+            pageIndex = getIndex(pageframes, addresses[i]);
+            if (pageframes.frames[pageIndex].found == false)
+            {
+                pageframes.frames[pageIndex].found = true;
+                count++;
+            }
+        }
+    }
+    //Finds the page frame in the array which is last in the earlier calls
+    //Inserts the new page at the given position
+    for (int i = 0;i < pageframes.MAXIMUM_SIZE;i++)
+    {
+        if (pageframes.frames[i].found == false)
+        {
+            pageframes.frames[i].start = start;
+            pageframes.frames[i].end = end;
+        }
+    }
+    //Resets all pages for next time LRU() is called
+    for (int i = 0;i < pageframes.MAXIMUM_SIZE;i++)
+    {
+        pageframes.frames[i].found = false;
     }
 }
 
@@ -142,12 +151,20 @@ int main(int argc, char **argv)
 
         std::ifstream memFile(fileName);
         std::string line;
-        int results[2] = {0, 0};
+        int results[3] = {0, 0, 0};
+        std::vector<int> addresses;
+        int value;
         while (std::getline(memFile, line))
         {
-            getInterval(std::stoi(line), pageSize, results);
+            value = std::stoi(line);
+	        addresses.push_back(value);
+        }
+        memFile.close();
+        for (int i = 0; i < addresses.size(); i++)
+        {
+            getInterval(addresses[i], pageSize, results);
             //std::cout << "Interval: [" << results[0] <<" " << results[1] << "]" << std::endl;
-            if (pageframes.size < MAXIMUM_PAGES && !isInPagesFrames(pageframes, std::stoi(line)))
+            if (pageframes.size < MAXIMUM_PAGES && !isInPagesFrames(pageframes, addresses[i]))
             {
                 if (pageframes.size == 0)
                 {
@@ -163,20 +180,15 @@ int main(int argc, char **argv)
                 //std::cout << "Pagefault!\n";
                 pageframes.size++;
             }
-            else if (!isInPagesFrames(pageframes, std::stoi(line)))
+            else if (!isInPagesFrames(pageframes, addresses[i]))
             {
-                LRU(pageframes, results[0], results[1]);
+                LRU(pageframes, results[0], results[1], i, addresses);
                 //std::cout << "Pagefault!\n";
                 pagesFaults++;
-            }
-            else if (pageframes.size >= MAXIMUM_PAGES)
-            {
-                shiftMostRecentlyUsed(pageframes, results[0], results[1]);
             }
             linesRead++;
             writePageFrames(pageframes);
         }
-        memFile.close();
         std::cout << "No physical pages = " << MAXIMUM_PAGES << ", page size = " << pageSize << std::endl;
         std::cout << "Reading memory trace from " << fileName << std::endl;
         std::cout << "Read " << linesRead << " memory references => " << pagesFaults << " pagefaults" << std::endl;
